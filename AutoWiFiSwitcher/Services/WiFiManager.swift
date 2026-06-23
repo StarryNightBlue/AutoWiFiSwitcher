@@ -20,6 +20,7 @@ class WiFiManager: NSObject, ObservableObject {
     override init() {
         super.init()
         locationManager.delegate = self
+        locationAuthorizationStatus = locationManager.authorizationStatus
         setupPathMonitor()
     }
 

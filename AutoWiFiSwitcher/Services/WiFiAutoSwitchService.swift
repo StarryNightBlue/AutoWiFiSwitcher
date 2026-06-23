@@ -59,6 +59,14 @@ class WiFiAutoSwitchService: ObservableObject {
         addLog("Removed network: \(network.ssid)")
     }
 
+    func updatePassword(for id: UUID, newPassword: String) {
+        guard let index = configuredNetworks.firstIndex(where: { $0.id == id }) else { return }
+        configuredNetworks[index].password = newPassword
+        KeychainHelper.save(ssid: configuredNetworks[index].ssid, password: newPassword)
+        saveNetworks()
+        addLog("Updated password for: \(configuredNetworks[index].ssid)")
+    }
+
     func moveNetwork(from source: IndexSet, to destination: Int) {
         configuredNetworks.move(fromOffsets: source, toOffset: destination)
         for (index, _) in configuredNetworks.enumerated() {

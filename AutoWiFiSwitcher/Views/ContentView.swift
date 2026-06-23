@@ -4,6 +4,7 @@ struct ContentView: View {
     @StateObject private var wifiManager = WiFiManager.shared
     @StateObject private var autoSwitchService = WiFiAutoSwitchService.shared
     @State private var showAddSheet = false
+    @State private var editingNetwork: WiFiNetwork?
 
     var body: some View {
         NavigationView {
@@ -21,6 +22,9 @@ struct ContentView: View {
             }
             .sheet(isPresented: $showAddSheet) {
                 WiFiFormView()
+            }
+            .sheet(item: $editingNetwork) { network in
+                WiFiFormView(editing: network)
             }
         }
         .onAppear {
@@ -64,6 +68,21 @@ struct ContentView: View {
                 Text(locationStatusText)
                     .font(.subheadline)
                     .foregroundColor(locationAuthorized ? .green : .red)
+                if wifiManager.locationAuthorizationStatus == .denied {
+                    Button("Open Settings") {
+                        if let url = URL(string: UIApplication.openSettingsURLString) {
+                            UIApplication.shared.open(url)
+                        }
+                    }
+                    .font(.caption)
+                    .buttonStyle(.bordered)
+                } else if wifiManager.locationAuthorizationStatus == .notDetermined {
+                    Button("Allow") {
+                        wifiManager.requestLocationPermission()
+                    }
+                    .font(.caption)
+                    .buttonStyle(.bordered)
+                }
             }
         } header: {
             Label("Status", systemImage: "antenna.radiowaves.left.and.right")
@@ -121,6 +140,23 @@ struct ContentView: View {
                         Image(systemName: "wifi")
                             .foregroundColor(.blue)
                     }
+                }
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    editingNetwork = network
+                }
+                .swipeActions(edge: .trailing) {
+                    Button(role: .destructive) {
+                        autoSwitchService.removeNetwork(id: network.id)
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
+                    Button {
+                        editingNetwork = network
+                    } label: {
+                        Label("Edit", systemImage: "pencil")
+                    }
+                    .tint(.orange)
                 }
             }
             .onMove { from, to in
