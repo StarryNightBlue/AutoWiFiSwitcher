@@ -56,12 +56,16 @@ struct ContentView: View {
             }
 
             if wifiManager.isWiFiConnected {
-                HStack {
-                    Label("Signal", systemImage: signalBarsIcon)
-                    Spacer()
-                    Text("\(Int(wifiManager.signalStrength * 100))%")
-                        .font(.subheadline)
-                        .foregroundColor(signalColor)
+                VStack(spacing: 4) {
+                    HStack {
+                        Label("Signal", systemImage: signalBarsIcon)
+                        Spacer()
+                        Text("\(Int(wifiManager.signalStrength * 100))%")
+                            .font(.subheadline)
+                            .foregroundColor(signalColor)
+                    }
+                    ProgressView(value: wifiManager.signalStrength)
+                        .tint(signalColor)
                 }
             }
 
