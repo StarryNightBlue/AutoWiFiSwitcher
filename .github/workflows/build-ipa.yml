@@ -31,10 +31,17 @@ jobs:
       - name: Create self-signed code signing certificate
         shell: bash
         run: |
-          security create-keychain -p temp temp.keychain
-          security default-keychain -s temp.keychain
-          security unlock-keychain -p temp temp.keychain
-          security set-keychain-settings -lut 7200 temp.keychain
+          KEYCHAIN="$HOME/Library/Keychains/temp.keychain"
+          KEYCHAIN_PASS="temp"
+
+          security delete-keychain "$KEYCHAIN" 2>/dev/null || true
+
+          security create-keychain -p "$KEYCHAIN_PASS" "$KEYCHAIN"
+          security list-keychains -d user -s "$KEYCHAIN" "$HOME/Library/Keychains/login.keychain-db"
+
+          security unlock-keychain -p "$KEYCHAIN_PASS" "$KEYCHAIN"
+          security set-keychain-settings -lut 7200 "$KEYCHAIN"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASS" "$KEYCHAIN"
 
           openssl genrsa -out /tmp/codesign.key 2048
           openssl req -new -key /tmp/codesign.key -out /tmp/codesign.csr \
@@ -52,10 +59,14 @@ jobs:
             -signkey /tmp/codesign.key -out /tmp/codesign.crt \
             -extfile /tmp/codesign_ext.cnf -extensions x509_ext
 
-          security import /tmp/codesign.crt -k temp.keychain
+          security import /tmp/codesign.crt -k "$KEYCHAIN" -T /usr/bin/codesign
 
-          IDENTITY=$(security find-identity -v -p codesigning | head -1 | grep -o '"[^"]*"' | tr -d '"')
+          echo "=== Identities available ==="
+          security find-identity -v "$KEYCHAIN" 2>&1
+
+          IDENTITY=$(security find-identity -v "$KEYCHAIN" | grep "\)" | head -1 | grep -oP '"[^"]+"' | tr -d '"')
           echo "CERT_IDENTITY=$IDENTITY" >> $GITHUB_ENV
+          echo "Using identity: $IDENTITY"
 
       - name: Sign app with self-signed certificate
         shell: bash
