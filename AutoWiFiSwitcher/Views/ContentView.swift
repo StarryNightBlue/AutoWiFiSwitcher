@@ -285,8 +285,10 @@ struct ContentView: View {
 
     private var locationStatusText: String {
         switch wifiManager.locationAuthorizationStatus {
-        case .authorizedWhenInUse, .authorizedAlways:
-            return "Authorized"
+        case .authorizedAlways:
+            return "Always"
+        case .authorizedWhenInUse:
+            return "When In Use"
         case .denied:
             return "Denied"
         case .restricted:

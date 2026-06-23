@@ -50,6 +50,8 @@ jobs:
           /usr/libexec/PlistBuddy -c "Add UISupportedInterfaceOrientations:0 string UIInterfaceOrientationPortrait" "$PLIST"
           /usr/libexec/PlistBuddy -c "Add UIViewControllerBasedStatusBarAppearance bool false" "$PLIST"
           /usr/libexec/PlistBuddy -c "Add CFBundleDisplayName string AutoWiFi" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add UIBackgroundModes array" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add UIBackgroundModes:0 string location" "$PLIST"
 
           echo "=== Patched Info.plist ==="
           /usr/libexec/PlistBuddy -c "Print" "$PLIST"

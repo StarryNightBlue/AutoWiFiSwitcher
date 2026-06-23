@@ -22,11 +22,17 @@ class WiFiAutoSwitchService: ObservableObject {
         loadNetworks()
         updateStatus()
         startStatusTimer()
+        wifiManager.onLocationUpdate = { [weak self] in
+            self?.evaluateAndSwitch()
+        }
     }
 
     func startAutoSwitch() {
         isAutoSwitchEnabled = true
         startEvaluation()
+        if wifiManager.locationAuthorizationStatus == .authorizedAlways {
+            wifiManager.startBackgroundLocationUpdates()
+        }
         addLog("Auto-switch started")
         updateStatus()
     }
@@ -34,6 +40,7 @@ class WiFiAutoSwitchService: ObservableObject {
     func stopAutoSwitch() {
         isAutoSwitchEnabled = false
         stopEvaluation()
+        wifiManager.stopBackgroundLocationUpdates()
         addLog("Auto-switch stopped")
         updateStatus()
     }

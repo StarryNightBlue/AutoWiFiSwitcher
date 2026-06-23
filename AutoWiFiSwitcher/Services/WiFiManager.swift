@@ -18,6 +18,7 @@ class WiFiManager: NSObject, ObservableObject {
     private let pathMonitor = NWPathMonitor()
     private let monitorQueue = DispatchQueue(label: "com.autowifiswitcher.network")
     private var timer: Timer?
+    var onLocationUpdate: (() -> Void)?
 
     override init() {
         super.init()
@@ -29,13 +30,28 @@ class WiFiManager: NSObject, ObservableObject {
 
     func requestLocationPermission() {
         DispatchQueue.main.async { [weak self] in
-            self?.locationManager.requestWhenInUseAuthorization()
+            self?.locationManager.requestAlwaysAuthorization()
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
             guard let self = self else { return }
             self.locationAuthorizationStatus = self.locationManager.authorizationStatus
             self.refreshCurrentSSID()
         }
+    }
+
+    func startBackgroundLocationUpdates() {
+        guard locationAuthorizationStatus == .authorizedAlways else { return }
+        locationManager.desiredAccuracy = kCLLocationAccuracyThreeKilometers
+        locationManager.distanceFilter = 500
+        locationManager.allowsBackgroundLocationUpdates = true
+        locationManager.pausesLocationUpdatesAutomatically = false
+        locationManager.activityType = .other
+        locationManager.startUpdatingLocation()
+    }
+
+    func stopBackgroundLocationUpdates() {
+        locationManager.stopUpdatingLocation()
+        locationManager.allowsBackgroundLocationUpdates = false
     }
 
     func getCurrentSSID() -> String? {
@@ -162,8 +178,15 @@ extension WiFiManager: CLLocationManagerDelegate {
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         DispatchQueue.main.async {
             self.locationAuthorizationStatus = manager.authorizationStatus
+            if manager.authorizationStatus == .authorizedAlways {
+                self.startBackgroundLocationUpdates()
+            }
             self.refreshCurrentSSID()
         }
+    }
+
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        onLocationUpdate?()
     }
 
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
