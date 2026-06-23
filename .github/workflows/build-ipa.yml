@@ -58,12 +58,10 @@ jobs:
         run: |
           APP_PATH=$(find build/derived -name "*.app" -type d | head -1)
           echo "App at: $APP_PATH"
-          python3 -c "
-import plistlib
-plistlib.dump({'com.apple.developer.networking.HotspotConfiguration': True, 'com.apple.developer.networking.wifi-info': True}, open('/tmp/entitlements.plist', 'wb'))
-"
+          defaults write /tmp/entitlements com.apple.developer.networking.HotspotConfiguration -bool true
+          defaults write /tmp/entitlements com.apple.developer.networking.wifi-info -bool true
           echo "=== Entitlements to embed ==="
-          cat /tmp/entitlements.plist
+          /usr/libexec/PlistBuddy -c "Print" /tmp/entitlements.plist
           codesign --force --sign - --entitlements /tmp/entitlements.plist "$APP_PATH/AutoWiFiSwitcher"
           echo "=== After codesign ==="
           codesign -d --entitlements - "$APP_PATH/AutoWiFiSwitcher" 2>/dev/null | plutil -p - 2>&1 || true
