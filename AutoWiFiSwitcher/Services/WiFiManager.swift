@@ -70,10 +70,7 @@ class WiFiManager: NSObject, ObservableObject {
         NEHotspotConfigurationManager.shared.removeConfiguration(forSSID: ssid)
     }
 
-    func removeAllWiFi() {
-        NEHotspotConfigurationManager.shared.removeAllConfigurations()
-    }
-
+    
     func refreshCurrentSSID() {
         currentSSID = getCurrentSSID()
     }
