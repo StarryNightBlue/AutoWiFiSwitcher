@@ -5,8 +5,6 @@ struct ContentView: View {
     @StateObject private var autoSwitchService = WiFiAutoSwitchService.shared
     @State private var showAddSheet = false
     @State private var editingNetwork: WiFiNetwork?
-    @State private var showManualSSIDAlert = false
-    @State private var manualSSIDBuffer = ""
 
     var body: some View {
         NavigationView {
@@ -40,56 +38,11 @@ struct ContentView: View {
         .onDisappear {
             wifiManager.stopPeriodicRefresh()
         }
-        .alert("Enter WiFi Name", isPresented: $showManualSSIDAlert) {
-            TextField("SSID", text: $manualSSIDBuffer)
-            Button("Save") {
-                wifiManager.manualSSID = manualSSIDBuffer
-            }
-            Button("Cancel", role: .cancel) { }
-        } message: {
-            Text("Auto-detection unavailable.\nEnter your current WiFi name manually.")
-        }
     }
 
     private var statusSection: some View {
         Section {
             if wifiManager.isWiFiConnected {
-                HStack {
-                    Label("WiFi", systemImage: "wifi")
-                    Spacer()
-                    if let ssid = wifiManager.effectiveSSID {
-                        Text(ssid)
-                            .font(.subheadline)
-                            .foregroundColor(.green)
-                    } else {
-                        Button("Enter SSID") {
-                            manualSSIDBuffer = ""
-                            showManualSSIDAlert = true
-                        }
-                        .font(.caption)
-                        .buttonStyle(.bordered)
-                    }
-                    if wifiManager.currentSSID == nil && !wifiManager.manualSSID.isEmpty {
-                        Button("Edit") {
-                            manualSSIDBuffer = wifiManager.manualSSID
-                            showManualSSIDAlert = true
-                        }
-                        .font(.caption2)
-                        .foregroundColor(.orange)
-                    }
-                }
-
-                if let bssid = wifiManager.bssid {
-                    HStack {
-                        Label("BSSID", systemImage: "macbook.and.ipad")
-                        Spacer()
-                        Text(bssid)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .monospaced()
-                    }
-                }
-
                 if let localIP = wifiManager.localIP {
                     HStack {
                         Label("Local IP", systemImage: "network")
@@ -210,7 +163,7 @@ struct ContentView: View {
 
                     Spacer()
 
-                    if network.ssid == wifiManager.effectiveSSID && wifiManager.isWiFiConnected {
+                    if network.ssid == wifiManager.currentSSID && wifiManager.isWiFiConnected {
                         Image(systemName: "wifi")
                             .foregroundColor(.blue)
                     }

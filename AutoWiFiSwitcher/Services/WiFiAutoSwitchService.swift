@@ -88,7 +88,7 @@ class WiFiAutoSwitchService: ObservableObject {
         guard isAutoSwitchEnabled else { return }
 
         wifiManager.refreshCurrentSSID()
-        guard let currentSSID = wifiManager.effectiveSSID else {
+        guard let currentSSID = wifiManager.currentSSID else {
             if !locationAuthorized() {
                 addLog("Location permission required for SSID detection")
             } else {

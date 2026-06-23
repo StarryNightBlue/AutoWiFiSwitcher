@@ -8,17 +8,11 @@ class WiFiManager: NSObject, ObservableObject {
     static let shared = WiFiManager()
 
     @Published var currentSSID: String?
-    @Published var bssid: String?
     @Published var localIP: String?
     @Published var externalIP: String?
     @Published var isWiFiConnected: Bool = false
     @Published var hasInternetAccess: Bool = false
     @Published var locationAuthorizationStatus: CLAuthorizationStatus = .notDetermined
-    @Published var manualSSID: String = "" {
-        didSet { UserDefaults.standard.set(manualSSID, forKey: "ManualSSID") }
-    }
-
-    var effectiveSSID: String? { currentSSID ?? (manualSSID.isEmpty ? nil : manualSSID) }
 
     private let locationManager = CLLocationManager()
     private let pathMonitor = NWPathMonitor()
@@ -29,7 +23,6 @@ class WiFiManager: NSObject, ObservableObject {
         super.init()
         locationManager.delegate = self
         locationAuthorizationStatus = locationManager.authorizationStatus
-        manualSSID = UserDefaults.standard.string(forKey: "ManualSSID") ?? ""
         setupPathMonitor()
         fetchExternalIP()
     }
@@ -66,7 +59,6 @@ class WiFiManager: NSObject, ObservableObject {
                 if let ssid = network?.ssid {
                     self?.currentSSID = ssid
                 }
-                self?.bssid = network?.bssid
             }
         }
     }
