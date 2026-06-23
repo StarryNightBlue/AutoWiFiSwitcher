@@ -12,6 +12,7 @@ class WiFiAutoSwitchService: ObservableObject {
     private let wifiManager = WiFiManager.shared
     private let storageKey = "ConfiguredWiFiNetworks"
     private var evaluationTimer: Timer?
+    private var lastConnectionAttempt: Date?
 
     init() {
         loadNetworks()
@@ -85,15 +86,15 @@ class WiFiAutoSwitchService: ObservableObject {
 
     private func evaluateAndSwitch() {
         guard isAutoSwitchEnabled else { return }
-        guard locationAuthorized() else {
-            addLog("Location permission required for SSID detection")
-            return
-        }
 
         wifiManager.refreshCurrentSSID()
-        guard let currentSSID = wifiManager.currentSSID else {
-            addLog("Not connected to any WiFi")
-            attemptConnectBestAvailable()
+        guard let currentSSID = wifiManager.effectiveSSID else {
+            if !locationAuthorized() {
+                addLog("Location permission required for SSID detection")
+            } else {
+                addLog("Not connected to any WiFi")
+                attemptConnectBestAvailable()
+            }
             return
         }
 
@@ -130,6 +131,10 @@ class WiFiAutoSwitchService: ObservableObject {
             addLog("Cooldown active, skip '\(network.ssid)'")
             return
         }
+        if let last = lastConnectionAttempt, Date().timeIntervalSince(last) < 30 {
+            return
+        }
+        lastConnectionAttempt = Date()
 
         addLog("Connecting to '\(network.ssid)'...")
         lastSwitchTime = Date()

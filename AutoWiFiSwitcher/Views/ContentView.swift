@@ -5,6 +5,8 @@ struct ContentView: View {
     @StateObject private var autoSwitchService = WiFiAutoSwitchService.shared
     @State private var showAddSheet = false
     @State private var editingNetwork: WiFiNetwork?
+    @State private var showManualSSIDAlert = false
+    @State private var manualSSIDBuffer = ""
 
     var body: some View {
         NavigationView {
@@ -38,6 +40,15 @@ struct ContentView: View {
         .onDisappear {
             wifiManager.stopPeriodicRefresh()
         }
+        .alert("Enter WiFi Name", isPresented: $showManualSSIDAlert) {
+            TextField("SSID", text: $manualSSIDBuffer)
+            Button("Save") {
+                wifiManager.manualSSID = manualSSIDBuffer
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("Auto-detection unavailable.\nEnter your current WiFi name manually.")
+        }
     }
 
     private var statusSection: some View {
@@ -46,9 +57,26 @@ struct ContentView: View {
                 HStack {
                     Label("WiFi", systemImage: "wifi")
                     Spacer()
-                    Text(wifiManager.currentSSID ?? "Connected")
-                        .font(.subheadline)
-                        .foregroundColor(.green)
+                    if let ssid = wifiManager.effectiveSSID {
+                        Text(ssid)
+                            .font(.subheadline)
+                            .foregroundColor(.green)
+                    } else {
+                        Button("Enter SSID") {
+                            manualSSIDBuffer = ""
+                            showManualSSIDAlert = true
+                        }
+                        .font(.caption)
+                        .buttonStyle(.bordered)
+                    }
+                    if wifiManager.currentSSID == nil && !wifiManager.manualSSID.isEmpty {
+                        Button("Edit") {
+                            manualSSIDBuffer = wifiManager.manualSSID
+                            showManualSSIDAlert = true
+                        }
+                        .font(.caption2)
+                        .foregroundColor(.orange)
+                    }
                 }
 
                 if let bssid = wifiManager.bssid {
@@ -60,18 +88,6 @@ struct ContentView: View {
                             .foregroundColor(.secondary)
                             .monospaced()
                     }
-                }
-
-                VStack(spacing: 4) {
-                    HStack {
-                        Label("Signal", systemImage: signalBarsIcon)
-                        Spacer()
-                        Text("\(Int(wifiManager.signalStrength * 100))%")
-                            .font(.subheadline)
-                            .foregroundColor(signalColor)
-                    }
-                    ProgressView(value: wifiManager.signalStrength)
-                        .tint(signalColor)
                 }
 
                 if let localIP = wifiManager.localIP {
@@ -160,11 +176,13 @@ struct ContentView: View {
             }
 
             if autoSwitchService.isAutoSwitchEnabled {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Cooldown: ") + Text("\(Int(autoSwitchService.cooldownSeconds))") + Text("s")
-                        .font(.subheadline)
-                    Slider(value: $autoSwitchService.cooldownSeconds, in: 10...300, step: 10)
+                Picker("Cooldown", selection: $autoSwitchService.cooldownSeconds) {
+                    ForEach([10, 20, 30, 45, 60, 90, 120, 180, 240, 300], id: \.self) { sec in
+                        Text("\(sec)s").tag(TimeInterval(sec))
+                    }
                 }
+                .pickerStyle(.wheel)
+                .frame(height: 120)
             }
         } header: {
             Label("Auto-Switch", systemImage: "arrow.triangle.2.circlepath")
@@ -192,7 +210,7 @@ struct ContentView: View {
 
                     Spacer()
 
-                    if network.ssid == wifiManager.currentSSID && wifiManager.isWiFiConnected {
+                    if network.ssid == wifiManager.effectiveSSID && wifiManager.isWiFiConnected {
                         Image(systemName: "wifi")
                             .foregroundColor(.blue)
                     }
@@ -268,17 +286,6 @@ struct ContentView: View {
             }
         }
     }
-
-    private var signalColor: Color {
-        switch wifiManager.signalStrength {
-        case 0.75...1.0: return .green
-        case 0.5..<0.75: return .yellow
-        case 0.25..<0.5: return .orange
-        default: return .red
-        }
-    }
-
-    private var signalBarsIcon: String { "wifi" }
 
     private var locationAuthorized: Bool {
         wifiManager.locationAuthorizationStatus == .authorizedWhenInUse ||

@@ -1,7 +1,6 @@
 "Not connected" = "未连接";
 "Connected" = "已连接";
 "BSSID" = "BSSID";
-"Signal" = "信号强度";
 "Local IP" = "本地IP";
 "External IP" = "外网IP";
 "Internet" = "互联网";
@@ -26,8 +25,12 @@
 "SSID (Network Name)" = "WiFi名称";
 "Add WiFi" = "添加WiFi";
 "Edit WiFi" = "编辑WiFi";
-"Cooldown: " = "冷却时间：";
-"s" = "秒";
+"Cooldown" = "冷却时间";
 "Networks: " = "网络：";
 " enabled" = " 个已启用";
 "Priority #" = "优先级 #";
+"Enter SSID" = "输入WiFi名称";
+"Enter WiFi Name" = "设置WiFi名称";
+"Auto-detection unavailable.\nEnter your current WiFi name manually." = "自动检测不可用。\n请手动输入当前WiFi名称。";
+"Save" = "保存";
+"SSID" = "WiFi名称";

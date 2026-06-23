@@ -37,7 +37,7 @@ jobs:
           APP_PATH=$(find build/derived -name "*.app" -type d | head -1)
           PLIST="$APP_PATH/Info.plist"
 
-          /usr/libexec/PlistBuddy -c "Set CFBundleDevelopmentRegion zh_CN" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Set CFBundleDevelopmentRegion en" "$PLIST"
 
           /usr/libexec/PlistBuddy -c "Add LSRequiresIPhoneOS bool true" "$PLIST"
           /usr/libexec/PlistBuddy -c "Add UIRequiresFullScreen bool true" "$PLIST"
