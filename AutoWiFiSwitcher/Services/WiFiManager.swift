@@ -25,8 +25,11 @@ class WiFiManager: NSObject, ObservableObject {
     }
 
     func requestLocationPermission() {
-        locationManager.requestWhenInUseAuthorization()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        DispatchQueue.main.async { [weak self] in
+            self?.locationManager.requestWhenInUseAuthorization()
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            guard let self = self else { return }
             self.locationAuthorizationStatus = self.locationManager.authorizationStatus
             self.refreshCurrentSSID()
         }

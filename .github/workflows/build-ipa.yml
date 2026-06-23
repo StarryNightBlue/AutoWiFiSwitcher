@@ -108,6 +108,15 @@ jobs:
           zip -r AutoWiFiSwitcher.ipa Payload/
           rm -rf Payload
 
+      - name: Debug - dump Info.plist from built app
+        shell: bash
+        run: |
+          APP_PATH=$(find build/derived -name "*.app" -type d | head -1)
+          echo "=== Info.plist ==="
+          /usr/libexec/PlistBuddy -c "Print" "$APP_PATH/Info.plist" 2>&1
+          echo "=== Bundle structure ==="
+          find "$APP_PATH" -maxdepth 2 -not -path "*/_Code*" | head -40
+
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
