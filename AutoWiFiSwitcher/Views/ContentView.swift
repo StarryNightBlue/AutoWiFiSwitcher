@@ -43,6 +43,12 @@ struct ContentView: View {
     private var statusSection: some View {
         Section {
             if wifiManager.isWiFiConnected {
+                HStack {
+                    Label("WiFi", systemImage: "wifi")
+                    Spacer()
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(.green)
+                }
                 if let localIP = wifiManager.localIP {
                     HStack {
                         Label("Local IP", systemImage: "network")
@@ -78,11 +84,21 @@ struct ContentView: View {
                 Label("Internet", systemImage: "globe")
                 Spacer()
                 if wifiManager.hasInternetAccess {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(.green)
+                    HStack(spacing: 4) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+                        Text("Connected")
+                            .font(.caption)
+                            .foregroundColor(.green)
+                    }
                 } else {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundColor(.red)
+                    HStack(spacing: 4) {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(.red)
+                        Text("Disconnected")
+                            .font(.caption)
+                            .foregroundColor(.red)
+                    }
                 }
             }
 
@@ -107,6 +123,24 @@ struct ContentView: View {
                     Text(locationStatusText)
                         .font(.subheadline)
                         .foregroundColor(.green)
+                }
+            }
+
+            HStack {
+                Label("Auto-Switch", systemImage: "arrow.triangle.2.circlepath")
+                Spacer()
+                Text(autoSwitchService.statusText)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            if let last = autoSwitchService.lastSuccessTime {
+                HStack {
+                    Label("Last Success", systemImage: "clock")
+                    Spacer()
+                    Text(last, style: .time)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
             }
         } header: {
@@ -136,6 +170,10 @@ struct ContentView: View {
                 }
                 .pickerStyle(.wheel)
                 .frame(height: 120)
+
+                Button(action: { autoSwitchService.manualConnect() }) {
+                    Label("Connect Now", systemImage: "arrow.forward.circle.fill")
+                }
             }
         } header: {
             Label("Auto-Switch", systemImage: "arrow.triangle.2.circlepath")

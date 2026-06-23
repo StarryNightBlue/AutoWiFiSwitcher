@@ -8,26 +8,42 @@ class WiFiAutoSwitchService: ObservableObject {
     @Published var lastSwitchTime: Date?
     @Published var cooldownSeconds: TimeInterval = 30
     @Published var logMessages: [String] = []
+    @Published var statusText: String = "Starting..."
+    @Published var lastSuccessTime: Date?
 
     private let wifiManager = WiFiManager.shared
     private let storageKey = "ConfiguredWiFiNetworks"
     private var evaluationTimer: Timer?
+    private var statusTimer: Timer?
     private var lastConnectionAttempt: Date?
+    private var lastTrySSID: String?
 
     init() {
         loadNetworks()
+        updateStatus()
+        startStatusTimer()
     }
 
     func startAutoSwitch() {
         isAutoSwitchEnabled = true
         startEvaluation()
         addLog("Auto-switch started")
+        updateStatus()
     }
 
     func stopAutoSwitch() {
         isAutoSwitchEnabled = false
         stopEvaluation()
         addLog("Auto-switch stopped")
+        updateStatus()
+    }
+
+    func manualConnect() {
+        guard isAutoSwitchEnabled else {
+            addLog("Enable auto-switch first")
+            return
+        }
+        attemptConnectBestAvailable()
     }
 
     private func startEvaluation() {
@@ -40,6 +56,54 @@ class WiFiAutoSwitchService: ObservableObject {
     private func stopEvaluation() {
         evaluationTimer?.invalidate()
         evaluationTimer = nil
+    }
+
+    private func startStatusTimer() {
+        statusTimer?.invalidate()
+        statusTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+            self?.updateStatus()
+        }
+    }
+
+    private func updateStatus() {
+        guard isAutoSwitchEnabled else {
+            statusText = "Auto-switch off"
+            return
+        }
+        let enabled = configuredNetworks.filter { $0.isEnabled }
+        guard !enabled.isEmpty else {
+            statusText = "No enabled networks"
+            return
+        }
+
+        if let last = lastSwitchTime, !canSwitch() {
+            let remaining = Int(cooldownSeconds - Date().timeIntervalSince(last))
+            if remaining > 0 {
+                statusText = "Cooldown \(remaining)s"
+                return
+            }
+        }
+
+        if let lastSSID = lastTrySSID, Date().timeIntervalSince(lastConnectionAttempt ?? .distantPast) < 30 {
+            statusText = "Connecting to '\(lastSSID)'..."
+            return
+        }
+
+        let best = enabled.sorted { $0.priority < $1.priority }.first!
+        if let current = wifiManager.currentSSID {
+            if current == best.ssid {
+                statusText = "Connected to '\(best.ssid)' ✓"
+            } else {
+                statusText = "Will switch to '\(best.ssid)'"
+            }
+        } else {
+            statusText = "Target '\(best.ssid)'"
+        }
+    }
+
+    private func canSwitch() -> Bool {
+        guard let last = lastSwitchTime else { return true }
+        return Date().timeIntervalSince(last) >= cooldownSeconds
     }
 
     func addNetwork(ssid: String, password: String) {
@@ -135,23 +199,22 @@ class WiFiAutoSwitchService: ObservableObject {
             return
         }
         lastConnectionAttempt = Date()
+        lastTrySSID = network.ssid
+        lastSwitchTime = Date()
+        updateStatus()
 
         addLog("Connecting to '\(network.ssid)'...")
-        lastSwitchTime = Date()
 
         wifiManager.connectToWiFi(ssid: network.ssid, password: password) { [weak self] success, error in
             if success {
                 self?.addLog("✅ Connection requested for '\(network.ssid)' (approve in system dialog)")
+                self?.lastSuccessTime = Date()
             } else {
                 let msg = error?.localizedDescription ?? "unknown error"
                 self?.addLog("❌ Failed '\(network.ssid)': \(msg)")
             }
+            self?.updateStatus()
         }
-    }
-
-    private func canSwitch() -> Bool {
-        guard let last = lastSwitchTime else { return true }
-        return Date().timeIntervalSince(last) >= cooldownSeconds
     }
 
     private func locationAuthorized() -> Bool {

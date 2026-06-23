@@ -29,3 +29,7 @@
 " enabled" = " 个已启用";
 "Priority #" = "优先级 #";
 "Save" = "保存";
+"Connected" = "已连接";
+"Disconnected" = "已断开";
+"Last Success" = "上次成功";
+"Connect Now" = "立即连接";
