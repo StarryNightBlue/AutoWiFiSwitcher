@@ -1,0 +1,6 @@
+*.ipa
+*.zip
+build/
+*.xcworkspace
+*.xcuserdata
+Pods/
