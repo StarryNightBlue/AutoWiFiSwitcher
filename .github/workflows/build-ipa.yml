@@ -28,75 +28,15 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             -derivedDataPath build/derived
 
-      - name: Create self-signed code signing certificate
-        shell: bash
-        run: |
-          KEYCHAIN="$HOME/Library/Keychains/temp.keychain"
-          KEYCHAIN_PASS="temp"
+      - name: Install ldid
+        run: brew install ldid
 
-          security delete-keychain "$KEYCHAIN" 2>/dev/null || true
-
-          security create-keychain -p "$KEYCHAIN_PASS" "$KEYCHAIN"
-          security list-keychains -d user -s "$KEYCHAIN"
-          security unlock-keychain -p "$KEYCHAIN_PASS" "$KEYCHAIN"
-          security set-keychain-settings -lut 7200 "$KEYCHAIN"
-
-          openssl genrsa -out /tmp/ca.key 2048
-          openssl req -new -x509 -days 365 -key /tmp/ca.key -out /tmp/ca.crt \
-            -subj "/CN=CA/O=AutoWiFi"
-
-          openssl genrsa -out /tmp/codesign.key 2048
-          openssl req -new -key /tmp/codesign.key -out /tmp/codesign.csr \
-            -subj "/CN=AutoWiFiSwitcher/OU=Development/O=AutoWiFi"
-
-          cat > /tmp/codesign_ext.cnf << 'EOF'
-          [ x509_ext ]
-          basicConstraints = critical, CA:FALSE
-          keyUsage = critical, digitalSignature
-          extendedKeyUsage = codeSigning
-          subjectKeyIdentifier = hash
-          authorityKeyIdentifier = keyid:always,issuer:always
-          EOF
-
-          openssl x509 -req -days 365 -in /tmp/codesign.csr \
-            -CA /tmp/ca.crt -CAkey /tmp/ca.key -CAcreateserial \
-            -out /tmp/codesign.crt \
-            -extfile /tmp/codesign_ext.cnf -extensions x509_ext
-
-          sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain /tmp/ca.crt
-
-          openssl pkcs12 -export -in /tmp/codesign.crt -inkey /tmp/codesign.key \
-            -out /tmp/codesign.p12 -passout pass:temp
-
-          security import /tmp/codesign.p12 -k "$KEYCHAIN" -P temp -T /usr/bin/codesign
-
-          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASS" "$KEYCHAIN"
-
-          echo "=== Identities available ==="
-          security find-identity -v -p codesigning "$KEYCHAIN" 2>&1
-
-          SHA1=$(openssl x509 -in /tmp/codesign.crt -noout -fingerprint -sha1 | cut -d= -f2 | tr -d :)
-          echo "CERT_IDENTITY=$SHA1" >> $GITHUB_ENV
-          echo "Using identity SHA-1: $SHA1"
-
-      - name: Sign app with self-signed certificate
+      - name: Fake-sign with ldid
         shell: bash
         run: |
           APP_PATH=$(find build/derived -name "*.app" -type d | head -1)
-          echo "Signing app at: $APP_PATH"
-          echo "Using identity: $CERT_IDENTITY"
-
-          codesign --force --sign "$CERT_IDENTITY" \
-            --entitlements AutoWiFiSwitcher/AutoWiFiSwitcher.entitlements \
-            --generate-entitlement-der \
-            "$APP_PATH"
-
-      - name: Verify signature
-        shell: bash
-        run: |
-          APP_PATH=$(find build/derived -name "*.app" -type d | head -1)
-          codesign -dv "$APP_PATH" 2>&1 || true
-          codesign --verify --verbose "$APP_PATH" 2>&1 || true
+          echo "App at: $APP_PATH"
+          ldid -SAutoWiFiSwitcher/AutoWiFiSwitcher.entitlements "$APP_PATH/AutoWiFiSwitcher"
 
       - name: Package IPA
         shell: bash
