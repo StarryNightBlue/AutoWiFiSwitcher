@@ -91,7 +91,7 @@ EOF
         run: |
           APP_PATH=$(find build/derived -name "*.app" -type d | head -1)
           echo "=== Entitlements extracted from binary ==="
-          codesign -d --entitlements - "$APP_PATH/AutoWiFiSwitcher" 2>&1 || true
+          codesign -d --entitlements - "$APP_PATH/AutoWiFiSwitcher" 2>/dev/null | plutil -p - 2>&1 || true
 
       - name: Debug - dump Info.plist from built app
         shell: bash
