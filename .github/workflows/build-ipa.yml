@@ -53,19 +53,19 @@ jobs:
           echo "=== Patched Info.plist ==="
           /usr/libexec/PlistBuddy -c "Print" "$PLIST"
 
-      - name: Embed entitlements with codesign
+      - name: Embed entitlements with ldid
         shell: bash
         run: |
           APP_PATH=$(find build/derived -name "*.app" -type d | head -1)
           echo "App at: $APP_PATH"
+          brew install ldid 2>/dev/null || true
           defaults write /tmp/entitlements com.apple.developer.networking.HotspotConfiguration -bool true
           defaults write /tmp/entitlements com.apple.developer.networking.wifi-info -bool true
           echo "=== Entitlements to embed ==="
           /usr/libexec/PlistBuddy -c "Print" /tmp/entitlements.plist
-          codesign --force --sign - --entitlements /tmp/entitlements.plist "$APP_PATH/AutoWiFiSwitcher"
-          echo "=== After codesign ==="
-          codesign -d --entitlements /tmp/out.plist "$APP_PATH/AutoWiFiSwitcher" 2>&1
-          plutil -p /tmp/out.plist 2>&1 || echo "(entitlements may be empty)"
+          ldid -S/tmp/entitlements.plist "$APP_PATH/AutoWiFiSwitcher"
+          echo "=== After ldid ==="
+          ldid -e "$APP_PATH/AutoWiFiSwitcher"
 
       - name: Package IPA
         shell: bash
@@ -82,8 +82,7 @@ jobs:
         run: |
           APP_PATH=$(find build/derived -name "*.app" -type d | head -1)
           echo "=== Entitlements extracted from binary ==="
-          codesign -d --entitlements /tmp/verify.plist "$APP_PATH/AutoWiFiSwitcher" 2>&1
-          plutil -p /tmp/verify.plist 2>&1 || echo "(entitlements may be empty)"
+          ldid -e "$APP_PATH/AutoWiFiSwitcher" 2>&1 || true
 
       - name: Debug - dump Info.plist from built app
         shell: bash
