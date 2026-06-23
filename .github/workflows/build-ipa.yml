@@ -57,7 +57,10 @@ jobs:
             -signkey /tmp/codesign.key -out /tmp/codesign.crt \
             -extfile /tmp/codesign_ext.cnf -extensions x509_ext
 
-          security import /tmp/codesign.crt -k "$KEYCHAIN" -T /usr/bin/codesign
+          openssl pkcs12 -export -in /tmp/codesign.crt -inkey /tmp/codesign.key \
+            -out /tmp/codesign.p12 -passout pass:temp
+
+          security import /tmp/codesign.p12 -k "$KEYCHAIN" -P temp -T /usr/bin/codesign
 
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASS" "$KEYCHAIN"
 
