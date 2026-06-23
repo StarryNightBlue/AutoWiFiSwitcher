@@ -64,7 +64,8 @@ jobs:
           /usr/libexec/PlistBuddy -c "Print" /tmp/entitlements.plist
           codesign --force --sign - --entitlements /tmp/entitlements.plist "$APP_PATH/AutoWiFiSwitcher"
           echo "=== After codesign ==="
-          codesign -d --entitlements - "$APP_PATH/AutoWiFiSwitcher" 2>/dev/null | plutil -p - 2>&1 || true
+          codesign -d --entitlements /tmp/out.plist "$APP_PATH/AutoWiFiSwitcher" 2>&1
+          plutil -p /tmp/out.plist 2>&1 || echo "(entitlements may be empty)"
 
       - name: Package IPA
         shell: bash
@@ -81,7 +82,8 @@ jobs:
         run: |
           APP_PATH=$(find build/derived -name "*.app" -type d | head -1)
           echo "=== Entitlements extracted from binary ==="
-          codesign -d --entitlements - "$APP_PATH/AutoWiFiSwitcher" 2>/dev/null | plutil -p - 2>&1 || true
+          codesign -d --entitlements /tmp/verify.plist "$APP_PATH/AutoWiFiSwitcher" 2>&1
+          plutil -p /tmp/verify.plist 2>&1 || echo "(entitlements may be empty)"
 
       - name: Debug - dump Info.plist from built app
         shell: bash
