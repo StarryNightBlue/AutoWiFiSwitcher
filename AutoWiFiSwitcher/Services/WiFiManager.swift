@@ -8,7 +8,10 @@ class WiFiManager: NSObject, ObservableObject {
     static let shared = WiFiManager()
 
     @Published var currentSSID: String?
+    @Published var bssid: String?
     @Published var signalStrength: Double = 0
+    @Published var localIP: String?
+    @Published var externalIP: String?
     @Published var isWiFiConnected: Bool = false
     @Published var hasInternetAccess: Bool = false
     @Published var locationAuthorizationStatus: CLAuthorizationStatus = .notDetermined
@@ -23,6 +26,7 @@ class WiFiManager: NSObject, ObservableObject {
         locationManager.delegate = self
         locationAuthorizationStatus = locationManager.authorizationStatus
         setupPathMonitor()
+        fetchExternalIP()
     }
 
     func requestLocationPermission() {
@@ -51,14 +55,51 @@ class WiFiManager: NSObject, ObservableObject {
 
     func refreshCurrentSSID() {
         currentSSID = getCurrentSSID()
+        localIP = getLocalIP()
         NEHotspotNetwork.fetchCurrent { [weak self] network in
             DispatchQueue.main.async {
                 if let ssid = network?.ssid {
                     self?.currentSSID = ssid
                 }
+                self?.bssid = network?.bssid
                 self?.signalStrength = network?.signalStrength ?? 0
             }
         }
+    }
+
+    func fetchExternalIP() {
+        guard let url = URL(string: "https://api.ipify.org") else { return }
+        URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
+            if let data = data, let ip = String(data: data, encoding: .utf8), !ip.isEmpty {
+                DispatchQueue.main.async {
+                    self?.externalIP = ip
+                }
+            }
+        }.resume()
+    }
+
+    private func getLocalIP() -> String? {
+        var ifaddr: UnsafeMutablePointer<ifaddrs>?
+        guard getifaddrs(&ifaddr) == 0, let firstAddr = ifaddr else { return nil }
+        defer { freeifaddrs(ifaddr) }
+        var ptr = firstAddr
+        while true {
+            let iface = ptr.pointee
+            let family = iface.ifa_addr.pointee.sa_family
+            if family == UInt8(AF_INET) {
+                let name = String(cString: iface.ifa_name)
+                if name == "en0" {
+                    var hostname = [CChar](repeating: 0, count: Int(NI_MAXHOST))
+                    getnameinfo(iface.ifa_addr, socklen_t(iface.ifa_addr.pointee.sa_len),
+                               &hostname, socklen_t(hostname.count),
+                               nil, 0, NI_NUMERICHOST)
+                    return String(cString: hostname)
+                }
+            }
+            guard let next = iface.ifa_next else { break }
+            ptr = next
+        }
+        return nil
     }
 
     func connectToWiFi(ssid: String, password: String, completion: @escaping (Bool, Error?) -> Void) {
@@ -100,6 +141,8 @@ class WiFiManager: NSObject, ObservableObject {
                 self?.isWiFiConnected = path.usesInterfaceType(.wifi)
                 if wasWiFi != (self?.isWiFiConnected ?? false) {
                     self?.refreshCurrentSSID()
+                    self?.localIP = self?.getLocalIP()
+                    self?.fetchExternalIP()
                 }
             }
         }

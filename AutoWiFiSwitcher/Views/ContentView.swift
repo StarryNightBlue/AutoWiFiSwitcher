@@ -29,6 +29,7 @@ struct ContentView: View {
         }
         .onAppear {
             wifiManager.refreshCurrentSSID()
+            wifiManager.fetchExternalIP()
             wifiManager.startPeriodicRefresh(interval: 3)
             if autoSwitchService.isAutoSwitchEnabled {
                 autoSwitchService.startAutoSwitch()
@@ -41,21 +42,26 @@ struct ContentView: View {
 
     private var statusSection: some View {
         Section {
-            HStack {
-                Label("WiFi", systemImage: "wifi")
-                Spacer()
-                if wifiManager.isWiFiConnected {
-                    Label(wifiManager.currentSSID ?? "Connected", systemImage: "checkmark.circle.fill")
-                        .foregroundColor(.green)
-                        .font(.subheadline)
-                } else {
-                    Label("Not connected", systemImage: "xmark.circle.fill")
-                        .foregroundColor(.red)
-                        .font(.subheadline)
-                }
-            }
-
             if wifiManager.isWiFiConnected {
+                HStack {
+                    Label("WiFi", systemImage: "wifi")
+                    Spacer()
+                    Text(wifiManager.currentSSID ?? "Connected")
+                        .font(.subheadline)
+                        .foregroundColor(.green)
+                }
+
+                if let bssid = wifiManager.bssid {
+                    HStack {
+                        Label("BSSID", systemImage: "macbook.and.ipad")
+                        Spacer()
+                        Text(bssid)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .monospaced()
+                    }
+                }
+
                 VStack(spacing: 4) {
                     HStack {
                         Label("Signal", systemImage: signalBarsIcon)
@@ -67,28 +73,53 @@ struct ContentView: View {
                     ProgressView(value: wifiManager.signalStrength)
                         .tint(signalColor)
                 }
-            }
 
-            HStack {
-                Label("Internet", systemImage: "globe")
-                Spacer()
-                if wifiManager.hasInternetAccess {
-                    Label("Connected", systemImage: "checkmark.circle.fill")
-                        .foregroundColor(.green)
-                        .font(.subheadline)
-                } else {
-                    Label("Disconnected", systemImage: "xmark.circle.fill")
+                if let localIP = wifiManager.localIP {
+                    HStack {
+                        Label("Local IP", systemImage: "network")
+                        Spacer()
+                        Text(localIP)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .monospaced()
+                    }
+                }
+
+                if let externalIP = wifiManager.externalIP {
+                    HStack {
+                        Label("External IP", systemImage: "globe")
+                        Spacer()
+                        Text(externalIP)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .monospaced()
+                    }
+                }
+            } else {
+                HStack {
+                    Label("WiFi", systemImage: "wifi.slash")
+                    Spacer()
+                    Label("Not connected", systemImage: "xmark.circle.fill")
                         .foregroundColor(.red)
                         .font(.subheadline)
                 }
             }
 
             HStack {
+                Label("Internet", systemImage: "globe")
+                Spacer()
+                if wifiManager.hasInternetAccess {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(.green)
+                } else {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundColor(.red)
+                }
+            }
+
+            HStack {
                 Label("Location", systemImage: "location.fill")
                 Spacer()
-                Text(locationStatusText)
-                    .font(.subheadline)
-                    .foregroundColor(locationAuthorized ? .green : .red)
                 if wifiManager.locationAuthorizationStatus == .denied {
                     Button("Open Settings") {
                         if let url = URL(string: UIApplication.openSettingsURLString) {
@@ -103,6 +134,10 @@ struct ContentView: View {
                     }
                     .font(.caption)
                     .buttonStyle(.bordered)
+                } else {
+                    Text(locationStatusText)
+                        .font(.subheadline)
+                        .foregroundColor(.green)
                 }
             }
         } header: {
@@ -234,15 +269,6 @@ struct ContentView: View {
         }
     }
 
-    private var signalBarsIcon: String {
-        switch wifiManager.signalStrength {
-        case 0.75...1.0: return "wifi"
-        case 0.5..<0.75: return "wifi"
-        case 0.25..<0.5: return "wifi"
-        default: return "wifi.slash"
-        }
-    }
-
     private var signalColor: Color {
         switch wifiManager.signalStrength {
         case 0.75...1.0: return .green
@@ -251,6 +277,8 @@ struct ContentView: View {
         default: return .red
         }
     }
+
+    private var signalBarsIcon: String { "wifi" }
 
     private var locationAuthorized: Bool {
         wifiManager.locationAuthorizationStatus == .authorizedWhenInUse ||
