@@ -8,6 +8,7 @@ class WiFiManager: NSObject, ObservableObject {
     static let shared = WiFiManager()
 
     @Published var currentSSID: String?
+    @Published var signalStrength: Double = 0
     @Published var isWiFiConnected: Bool = false
     @Published var hasInternetAccess: Bool = false
     @Published var locationAuthorizationStatus: CLAuthorizationStatus = .notDetermined
@@ -51,10 +52,11 @@ class WiFiManager: NSObject, ObservableObject {
     func refreshCurrentSSID() {
         currentSSID = getCurrentSSID()
         NEHotspotNetwork.fetchCurrent { [weak self] network in
-            if let ssid = network?.ssid {
-                DispatchQueue.main.async {
+            DispatchQueue.main.async {
+                if let ssid = network?.ssid {
                     self?.currentSSID = ssid
                 }
+                self?.signalStrength = network?.signalStrength ?? 0
             }
         }
     }

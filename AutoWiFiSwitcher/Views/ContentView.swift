@@ -55,6 +55,16 @@ struct ContentView: View {
                 }
             }
 
+            if wifiManager.isWiFiConnected {
+                HStack {
+                    Label("Signal", systemImage: signalBarsIcon)
+                    Spacer()
+                    Text("\(Int(wifiManager.signalStrength * 100))%")
+                        .font(.subheadline)
+                        .foregroundColor(signalColor)
+                }
+            }
+
             HStack {
                 Label("Internet", systemImage: "globe")
                 Spacer()
@@ -217,6 +227,24 @@ struct ContentView: View {
                     .font(.caption)
                 }
             }
+        }
+    }
+
+    private var signalBarsIcon: String {
+        switch wifiManager.signalStrength {
+        case 0.75...1.0: return "wifi"
+        case 0.5..<0.75: return "wifi"
+        case 0.25..<0.5: return "wifi"
+        default: return "wifi.slash"
+        }
+    }
+
+    private var signalColor: Color {
+        switch wifiManager.signalStrength {
+        case 0.75...1.0: return .green
+        case 0.5..<0.75: return .yellow
+        case 0.25..<0.5: return .orange
+        default: return .red
         }
     }
 
