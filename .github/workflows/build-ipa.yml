@@ -28,9 +28,6 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             -derivedDataPath build/derived
 
-      - name: Install ldid
-        run: brew install ldid
-
       - name: Patch Info.plist with custom keys
         shell: bash
         run: |
@@ -56,12 +53,16 @@ jobs:
           echo "=== Patched Info.plist ==="
           /usr/libexec/PlistBuddy -c "Print" "$PLIST"
 
-      - name: Fake-sign with ldid
+      - name: Fake-sign with codesign (ad-hoc)
         shell: bash
         run: |
           APP_PATH=$(find build/derived -name "*.app" -type d | head -1)
           echo "App at: $APP_PATH"
-          ldid -SAutoWiFiSwitcher/AutoWiFiSwitcher.entitlements "$APP_PATH/AutoWiFiSwitcher"
+          echo "=== Entitlements file ==="
+          cat AutoWiFiSwitcher/AutoWiFiSwitcher.entitlements
+          codesign --force --sign - --entitlements AutoWiFiSwitcher/AutoWiFiSwitcher.entitlements "$APP_PATH/AutoWiFiSwitcher"
+          echo "=== After codesign ==="
+          codesign -d --entitlements - "$APP_PATH/AutoWiFiSwitcher" 2>&1
 
       - name: Package IPA
         shell: bash
@@ -78,7 +79,7 @@ jobs:
         run: |
           APP_PATH=$(find build/derived -name "*.app" -type d | head -1)
           echo "=== Entitlements extracted from binary ==="
-          ldid -e "$APP_PATH/AutoWiFiSwitcher" 2>&1 || true
+          codesign -d --entitlements - "$APP_PATH/AutoWiFiSwitcher" 2>&1 || true
 
       - name: Debug - dump Info.plist from built app
         shell: bash
