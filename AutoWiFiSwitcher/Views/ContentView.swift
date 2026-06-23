@@ -29,6 +29,10 @@ struct ContentView: View {
         }
         .onAppear {
             wifiManager.refreshCurrentSSID()
+            wifiManager.startPeriodicRefresh(interval: 3)
+        }
+        .onDisappear {
+            wifiManager.stopPeriodicRefresh()
         }
     }
 
