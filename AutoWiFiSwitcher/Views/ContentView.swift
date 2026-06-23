@@ -161,7 +161,7 @@ struct ContentView: View {
 
             if autoSwitchService.isAutoSwitchEnabled {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Cooldown: \(Int(autoSwitchService.cooldownSeconds))s")
+                    Text("Cooldown: ") + Text("\(Int(autoSwitchService.cooldownSeconds))") + Text("s")
                         .font(.subheadline)
                     Slider(value: $autoSwitchService.cooldownSeconds, in: 10...300, step: 10)
                 }
@@ -185,7 +185,7 @@ struct ContentView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(network.ssid)
                             .font(.body)
-                        Text("Priority #\(network.priority)")
+                        Text("Priority #") + Text("\(network.priority)")
                             .font(.caption2)
                             .foregroundColor(.secondary)
                     }
@@ -231,7 +231,7 @@ struct ContentView: View {
             }
         } header: {
             let count = autoSwitchService.configuredNetworks.filter { $0.isEnabled }.count
-            Label("Networks (\(count) enabled)", systemImage: "list.bullet")
+            Label(title: { Text("Networks: ") + Text("\(count)") + Text(" enabled") }, icon: { Image(systemName: "list.bullet") })
         }
     }
 
