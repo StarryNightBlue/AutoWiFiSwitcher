@@ -208,8 +208,10 @@ class WiFiAutoSwitchService: ObservableObject {
                 self?.addLog("✅ Connection requested for '\(network.ssid)' (approve in system dialog)")
                 self?.lastSuccessTime = Date()
             } else {
+                let nsError = error as NSError?
+                let code = nsError?.code ?? -1
                 let msg = error?.localizedDescription ?? "unknown error"
-                self?.addLog("❌ Failed '\(network.ssid)': \(msg)")
+                self?.addLog("❌ Failed '\(network.ssid)' (code \(code)): \(msg)")
             }
             self?.updateStatus()
         }
