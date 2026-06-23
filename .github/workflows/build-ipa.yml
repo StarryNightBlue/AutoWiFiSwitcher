@@ -37,6 +37,8 @@ jobs:
           APP_PATH=$(find build/derived -name "*.app" -type d | head -1)
           PLIST="$APP_PATH/Info.plist"
 
+          /usr/libexec/PlistBuddy -c "Set CFBundleDevelopmentRegion zh_CN" "$PLIST"
+
           /usr/libexec/PlistBuddy -c "Add LSRequiresIPhoneOS bool true" "$PLIST"
           /usr/libexec/PlistBuddy -c "Add UIRequiresFullScreen bool true" "$PLIST"
           /usr/libexec/PlistBuddy -c "Add NSLocationWhenInUseUsageDescription string AutoWiFi需要位置权限来读取当前连接的WiFi名称，以实现自动切换功能。" "$PLIST"
@@ -48,7 +50,6 @@ jobs:
           /usr/libexec/PlistBuddy -c "Add UISupportedInterfaceOrientations:0 string UIInterfaceOrientationPortrait" "$PLIST"
           /usr/libexec/PlistBuddy -c "Add UIViewControllerBasedStatusBarAppearance bool false" "$PLIST"
           /usr/libexec/PlistBuddy -c "Add CFBundleDisplayName string AutoWiFi" "$PLIST"
-          /usr/libexec/PlistBuddy -c "Add CFBundleDevelopmentRegion string zh_CN" "$PLIST"
 
           echo "=== Patched Info.plist ==="
           /usr/libexec/PlistBuddy -c "Print" "$PLIST"
