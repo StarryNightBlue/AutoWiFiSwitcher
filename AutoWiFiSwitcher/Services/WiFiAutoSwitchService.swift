@@ -4,7 +4,7 @@ class WiFiAutoSwitchService: ObservableObject {
     static let shared = WiFiAutoSwitchService()
 
     @Published var configuredNetworks: [WiFiNetwork] = []
-    @Published var isAutoSwitchEnabled: Bool = false
+    @Published var isAutoSwitchEnabled: Bool = true
     @Published var lastSwitchTime: Date?
     @Published var cooldownSeconds: TimeInterval = 30
     @Published var logMessages: [String] = []

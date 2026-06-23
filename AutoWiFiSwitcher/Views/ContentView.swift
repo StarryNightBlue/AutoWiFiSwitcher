@@ -30,6 +30,9 @@ struct ContentView: View {
         .onAppear {
             wifiManager.refreshCurrentSSID()
             wifiManager.startPeriodicRefresh(interval: 3)
+            if autoSwitchService.isAutoSwitchEnabled {
+                autoSwitchService.startAutoSwitch()
+            }
         }
         .onDisappear {
             wifiManager.stopPeriodicRefresh()

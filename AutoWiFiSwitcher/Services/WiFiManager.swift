@@ -48,6 +48,18 @@ class WiFiManager: NSObject, ObservableObject {
         return nil
     }
 
+    func refreshCurrentSSID() {
+        NEHotspotNetwork.fetchCurrent { [weak self] network in
+            DispatchQueue.main.async {
+                if let ssid = network?.ssid {
+                    self?.currentSSID = ssid
+                } else {
+                    self?.currentSSID = self?.getCurrentSSID()
+                }
+            }
+        }
+    }
+
     func connectToWiFi(ssid: String, password: String, completion: @escaping (Bool, Error?) -> Void) {
         let config = NEHotspotConfiguration(ssid: ssid, passphrase: password, isWEP: false)
         config.joinOnce = false
@@ -79,11 +91,7 @@ class WiFiManager: NSObject, ObservableObject {
     }
 
     
-    func refreshCurrentSSID() {
-        currentSSID = getCurrentSSID()
-    }
-
-    private func setupPathMonitor() {
+        private func setupPathMonitor() {
         pathMonitor.pathUpdateHandler = { [weak self] path in
             DispatchQueue.main.async {
                 self?.hasInternetAccess = path.status == .satisfied
