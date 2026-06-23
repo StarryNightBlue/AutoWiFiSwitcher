@@ -11,27 +11,35 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install XcodeGen
-        run: brew install xcodegen
+      - name: Install XcodeGen & ldid
+        run: |
+          brew install xcodegen ldid
 
       - name: Generate Xcode project
         run: xcodegen generate
 
-      - name: Build .app bundle (ad-hoc signed)
+      - name: Build .app bundle (unsigned)
         run: |
           xcodebuild -project AutoWiFiSwitcher.xcodeproj \
             -scheme AutoWiFiSwitcher \
             -configuration Debug \
             -sdk iphoneos \
-            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
             -derivedDataPath build/derived
+
+      - name: Fake-sign with ldid
+        shell: bash
+        run: |
+          APP_PATH=$(find build/derived -name "*.app" -type d | head -1)
+          echo "App at: $APP_PATH"
+          ldid -SAutoWiFiSwitcher/AutoWiFiSwitcher.entitlements "$APP_PATH/AutoWiFiSwitcher"
 
       - name: Package IPA
         shell: bash
         run: |
           APP_PATH=$(find build/derived -name "*.app" -type d | head -1)
-          echo "Found app at: $APP_PATH"
           mkdir -p build/Payload
           cp -R "$APP_PATH" build/Payload/
           cd build
