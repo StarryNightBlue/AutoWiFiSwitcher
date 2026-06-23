@@ -22,4 +22,5 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.autowifiswitcher.app
         INFOPLIST_FILE: AutoWiFiSwitcher/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
         CODE_SIGN_STYLE: Automatic
