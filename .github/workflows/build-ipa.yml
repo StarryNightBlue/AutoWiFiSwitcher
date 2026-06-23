@@ -31,6 +31,28 @@ jobs:
       - name: Install ldid
         run: brew install ldid
 
+      - name: Patch Info.plist with custom keys
+        shell: bash
+        run: |
+          APP_PATH=$(find build/derived -name "*.app" -type d | head -1)
+          PLIST="$APP_PATH/Info.plist"
+
+          /usr/libexec/PlistBuddy -c "Add LSRequiresIPhoneOS bool true" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add UIRequiresFullScreen bool true" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add NSLocationWhenInUseUsageDescription string AutoWiFi需要位置权限来读取当前连接的WiFi名称，以实现自动切换功能。" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add NSLocationAlwaysAndWhenInUseUsageDescription string AutoWiFi需要位置权限以在后台监控WiFi变化，实现自动切换。" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add UILaunchScreen dict" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add UIApplicationSceneManifest dict" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add UIApplicationSceneManifest:UIApplicationSupportsMultipleScenes bool false" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add UISupportedInterfaceOrientations array" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add UISupportedInterfaceOrientations:0 string UIInterfaceOrientationPortrait" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add UIViewControllerBasedStatusBarAppearance bool false" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add CFBundleDisplayName string AutoWiFi" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add CFBundleDevelopmentRegion string zh_CN" "$PLIST"
+
+          echo "=== Patched Info.plist ==="
+          /usr/libexec/PlistBuddy -c "Print" "$PLIST"
+
       - name: Fake-sign with ldid
         shell: bash
         run: |
