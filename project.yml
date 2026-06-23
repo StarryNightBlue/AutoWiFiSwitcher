@@ -1,0 +1,25 @@
+name: AutoWiFiSwitcher
+options:
+  bundleIdPrefix: com.autowifiswitcher
+  deploymentTarget:
+    iOS: "15.0"
+settings:
+  base:
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    DEVELOPMENT_TEAM: ""
+targets:
+  AutoWiFiSwitcher:
+    type: application
+    platform: iOS
+    sources:
+      - AutoWiFiSwitcher
+    info:
+      path: AutoWiFiSwitcher/Info.plist
+    entitlements:
+      path: AutoWiFiSwitcher/AutoWiFiSwitcher.entitlements
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.autowifiswitcher.app
+        INFOPLIST_FILE: AutoWiFiSwitcher/Info.plist
+        CODE_SIGN_STYLE: Automatic

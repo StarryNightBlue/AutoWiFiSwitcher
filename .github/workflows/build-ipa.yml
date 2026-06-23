@@ -1,0 +1,46 @@
+name: Build IPA (unsigned)
+
+on:
+  push:
+    branches: ["*"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Build .app bundle (unsigned)
+        run: |
+          xcodebuild -project AutoWiFiSwitcher.xcodeproj \
+            -scheme AutoWiFiSwitcher \
+            -configuration Release \
+            -sdk iphoneos \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            -derivedDataPath build/derived
+
+      - name: Package unsigned IPA
+        shell: bash
+        run: |
+          APP_PATH=$(find build/derived -name "*.app" -type d | head -1)
+          echo "Found app at: $APP_PATH"
+          mkdir -p build/Payload
+          cp -R "$APP_PATH" build/Payload/
+          cd build
+          zip -r AutoWiFiSwitcher.unsigned.ipa Payload/
+          rm -rf Payload
+
+      - name: Upload unsigned IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: AutoWiFiSwitcher-unsigned
+          path: build/AutoWiFiSwitcher.unsigned.ipa
