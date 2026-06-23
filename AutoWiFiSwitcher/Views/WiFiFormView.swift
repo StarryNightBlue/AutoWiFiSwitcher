@@ -7,8 +7,6 @@ struct WiFiFormView: View {
     @State private var ssid = ""
     @State private var password = ""
     @State private var showPassword = false
-    @State private var isLoading = false
-    @State private var errorMessage: String?
 
     private var isEditing: Bool { editing != nil }
 
@@ -43,31 +41,13 @@ struct WiFiFormView: View {
 
                 Section {
                     Button(action: save) {
-                        HStack {
-                            Spacer()
-                            if isLoading {
-                                ProgressView()
-                            } else {
-                                Text(isEditing ? "Update" : "Save")
-                                    .fontWeight(.semibold)
-                            }
-                            Spacer()
-                        }
+                        Text(isEditing ? "Update" : "Save")
+                            .fontWeight(.semibold)
+                            .frame(maxWidth: .infinity)
                     }
-                    .disabled(ssid.trimmingCharacters(in: .whitespaces).isEmpty || isLoading)
+                    .disabled(ssid.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
 
-                if let error = errorMessage {
-                    Section {
-                        HStack {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .foregroundColor(.red)
-                            Text(error)
-                                .foregroundColor(.red)
-                                .font(.caption)
-                        }
-                    }
-                }
             }
             .navigationTitle(isEditing ? "Edit WiFi" : "Add WiFi")
             .navigationBarTitleDisplayMode(.inline)
@@ -88,26 +68,12 @@ struct WiFiFormView: View {
     private func save() {
         let trimmedSSID = ssid.trimmingCharacters(in: .whitespaces)
         guard !trimmedSSID.isEmpty else { return }
-        isLoading = true
-        errorMessage = nil
 
         if let network = editing {
             WiFiAutoSwitchService.shared.updatePassword(for: network.id, newPassword: password)
-            dismiss()
         } else {
             WiFiAutoSwitchService.shared.addNetwork(ssid: trimmedSSID, password: password)
-
-            WiFiManager.shared.connectToWiFi(ssid: trimmedSSID, password: password) { success, error in
-                DispatchQueue.main.async {
-                    isLoading = false
-                    if success {
-                        dismiss()
-                    } else {
-                        let errMsg = error?.localizedDescription ?? "unknown error"
-                        errorMessage = "Connection failed: \(errMsg)"
-                    }
-                }
-            }
         }
+        dismiss()
     }
 }
