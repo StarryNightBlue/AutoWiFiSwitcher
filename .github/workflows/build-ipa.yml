@@ -71,6 +71,13 @@ jobs:
           zip -r AutoWiFiSwitcher.ipa Payload/
           rm -rf Payload
 
+      - name: Verify entitlements in signed binary
+        shell: bash
+        run: |
+          APP_PATH=$(find build/derived -name "*.app" -type d | head -1)
+          echo "=== Entitlements extracted from binary ==="
+          ldid -e "$APP_PATH/AutoWiFiSwitcher" 2>&1 || true
+
       - name: Debug - dump Info.plist from built app
         shell: bash
         run: |

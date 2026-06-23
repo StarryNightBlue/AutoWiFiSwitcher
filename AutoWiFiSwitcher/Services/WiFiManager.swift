@@ -49,12 +49,11 @@ class WiFiManager: NSObject, ObservableObject {
     }
 
     func refreshCurrentSSID() {
+        currentSSID = getCurrentSSID()
         NEHotspotNetwork.fetchCurrent { [weak self] network in
-            DispatchQueue.main.async {
-                if let ssid = network?.ssid {
+            if let ssid = network?.ssid {
+                DispatchQueue.main.async {
                     self?.currentSSID = ssid
-                } else {
-                    self?.currentSSID = self?.getCurrentSSID()
                 }
             }
         }
