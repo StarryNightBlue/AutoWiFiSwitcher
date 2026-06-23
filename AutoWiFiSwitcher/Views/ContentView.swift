@@ -94,7 +94,7 @@ struct ContentView: View {
             Toggle(isOn: $autoSwitchService.isAutoSwitchEnabled) {
                 Label("Auto-Switch", systemImage: "arrow.triangle.2.circlepath")
             }
-            .onChange(of: autoSwitchService.isAutoSwitchEnabled) { newValue in
+            .onChange(of: autoSwitchService.isAutoSwitchEnabled) { _, newValue in
                 if newValue {
                     wifiManager.requestLocationPermission()
                     autoSwitchService.startAutoSwitch()
