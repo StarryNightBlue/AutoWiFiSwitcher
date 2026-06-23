@@ -156,17 +156,13 @@ class WiFiAutoSwitchService: ObservableObject {
             if !locationAuthorized() {
                 addLog("Location permission required for SSID detection")
             } else {
-                addLog("Not connected to any WiFi")
                 attemptConnectBestAvailable()
             }
             return
         }
 
         let enabledNetworks = configuredNetworks.filter { $0.isEnabled }.sorted { $0.priority < $1.priority }
-        guard !enabledNetworks.isEmpty else {
-            addLog("No enabled networks configured")
-            return
-        }
+        guard !enabledNetworks.isEmpty else { return }
 
         let currentIndex = enabledNetworks.firstIndex { $0.ssid == currentSSID }
 
@@ -191,13 +187,8 @@ class WiFiAutoSwitchService: ObservableObject {
             addLog("Password not found for '\(network.ssid)'")
             return
         }
-        guard canSwitch() else {
-            addLog("Cooldown active, skip '\(network.ssid)'")
-            return
-        }
-        if let last = lastConnectionAttempt, Date().timeIntervalSince(last) < 30 {
-            return
-        }
+        guard canSwitch() else { return }
+        if let last = lastConnectionAttempt, Date().timeIntervalSince(last) < 30 { return }
         lastConnectionAttempt = Date()
         lastTrySSID = network.ssid
         lastSwitchTime = Date()
