@@ -11,14 +11,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install XcodeGen & ldid
-        run: |
-          brew install xcodegen ldid
+      - name: Install XcodeGen
+        run: brew install xcodegen
 
       - name: Generate Xcode project
         run: xcodegen generate
 
-      - name: Build .app bundle (unsigned)
+      - name: Build unsigned .app
         run: |
           xcodebuild -project AutoWiFiSwitcher.xcodeproj \
             -scheme AutoWiFiSwitcher \
@@ -29,12 +28,53 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             -derivedDataPath build/derived
 
-      - name: Fake-sign with ldid
+      - name: Create self-signed code signing certificate
+        shell: bash
+        run: |
+          security create-keychain -p temp temp.keychain
+          security default-keychain -s temp.keychain
+          security unlock-keychain -p temp temp.keychain
+          security set-keychain-settings -lut 7200 temp.keychain
+
+          openssl genrsa -out /tmp/codesign.key 2048
+          openssl req -new -key /tmp/codesign.key -out /tmp/codesign.csr \
+            -subj "/CN=AutoWiFiSwitcher/OU=Development/O=AutoWiFi"
+
+          cat > /tmp/codesign_ext.cnf << 'EOF'
+          [x509_ext]
+          keyUsage = critical, digitalSignature
+          extendedKeyUsage = codeSigning
+          subjectKeyIdentifier = hash
+          authorityKeyIdentifier = keyid:always
+          EOF
+
+          openssl x509 -req -days 365 -in /tmp/codesign.csr \
+            -signkey /tmp/codesign.key -out /tmp/codesign.crt \
+            -extfile /tmp/codesign_ext.cnf -extensions x509_ext
+
+          security import /tmp/codesign.crt -k temp.keychain
+
+          IDENTITY=$(security find-identity -v -p codesigning | head -1 | grep -o '"[^"]*"' | tr -d '"')
+          echo "CERT_IDENTITY=$IDENTITY" >> $GITHUB_ENV
+
+      - name: Sign app with self-signed certificate
         shell: bash
         run: |
           APP_PATH=$(find build/derived -name "*.app" -type d | head -1)
-          echo "App at: $APP_PATH"
-          ldid -SAutoWiFiSwitcher/AutoWiFiSwitcher.entitlements "$APP_PATH/AutoWiFiSwitcher"
+          echo "Signing app at: $APP_PATH"
+          echo "Using identity: $CERT_IDENTITY"
+
+          codesign --force --sign "$CERT_IDENTITY" \
+            --entitlements AutoWiFiSwitcher/AutoWiFiSwitcher.entitlements \
+            --generate-entitlement-der \
+            "$APP_PATH"
+
+      - name: Verify signature
+        shell: bash
+        run: |
+          APP_PATH=$(find build/derived -name "*.app" -type d | head -1)
+          codesign -dv "$APP_PATH" 2>&1 || true
+          codesign --verify --verbose "$APP_PATH" 2>&1 || true
 
       - name: Package IPA
         shell: bash
