@@ -26,6 +26,10 @@ class WiFiManager: NSObject, ObservableObject {
 
     func requestLocationPermission() {
         locationManager.requestWhenInUseAuthorization()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            self.locationAuthorizationStatus = self.locationManager.authorizationStatus
+            self.refreshCurrentSSID()
+        }
     }
 
     func getCurrentSSID() -> String? {
